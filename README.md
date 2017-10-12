@@ -1,2 +1,4 @@
 # goSpace-examples
-Programming with Spaces in Go (examples)
+
+## Synopsis
+goSpace-examples, implementation of pSpace examples in goSpace.
