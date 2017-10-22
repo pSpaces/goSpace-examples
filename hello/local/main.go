@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	spc := NewSpace("8080")
+	spc := NewSpace("space")
 
 	// Put a message into the space.
 	spc.Put("Hello, universe!")
