@@ -9,6 +9,7 @@ import (
 
 func main() {
 	host, port := args()
+
 	if host == "" {
 		return
 	}
