@@ -1,4 +1,4 @@
-// This is a model to-do list on a fridge.
+// This is a simple example tuple space used to represent a to-do list on a fridge.
 
 package main
 
