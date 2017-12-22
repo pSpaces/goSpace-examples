@@ -1,5 +1,5 @@
 // This is a model of the classic problem of the dining philosophers.
-// The solution is a wrong one: the philosophers can end up in a deadlock.
+// The protocol uses tickets to limite concurrency and to avoid deadlocks.
 
 package main
 
