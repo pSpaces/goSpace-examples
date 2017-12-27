@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
+
 	. "github.com/pspaces/gospace"
 )
 
 func main() {
-	spc := NewSpace("space")
+	inbox := NewSpace("space")
 
 	// Put a message into the space.
-	spc.Put("Hello, universe!")
+	inbox.Put("Hello world!")
 
 	// Get a message from the space
 	// via pattern matching.
 	var message string
-	spc.Get(&message)
+	inbox.Get(&message)
 
 	fmt.Println(message)
 }
