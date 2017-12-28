@@ -6,8 +6,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strconv"
-	"strings"
+	"time"
 
 	. "github.com/pspaces/gospace"
 )
@@ -16,7 +17,7 @@ func main() {
 
 	numPhilosophers, me, host, port := args()
 
-	uri := strings.Join([]string{"tcp://", host, ":", port, "/board"}, "")
+	uri := "tcp://" + host + ":" + port + "/board"
 	board := NewRemoteSpace(uri)
 
 	go philosopher(&board, me, numPhilosophers)
@@ -46,6 +47,9 @@ func philosopher(board *Space, me int, numPhilosophers int) {
 		// Lunch time.
 		fmt.Printf("Philosopher %d is eating...\n", me)
 
+		// Eat for some seconds...
+		time.Sleep(1000 * time.Millisecond)
+
 		// Return the forks and the ticket (put the corresponding tuples).
 		board.Put("fork", left)
 		board.Put("fork", right)
@@ -65,17 +69,28 @@ func args() (numPhilosophers int, me int, host string, port string) {
 	flag.Parse()
 	argn := flag.NArg()
 
-	if argn > 4 {
-		fmt.Printf("Too many arguments\nUsage: [number of philosopers] [my id] [host] [port]\n")
-		return
+	if argn < 2 || argn > 4 {
+		fmt.Println("Wrong number of arguments")
+		fmt.Println("Usage: go run main.go <number of philosopers> <my id> [host] [port]")
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {
-		numPhilosophers, _ = strconv.Atoi(flag.Arg(0))
+		var err error
+		numPhilosophers, err = strconv.Atoi(flag.Arg(0))
+		if err != nil || numPhilosophers < 2 {
+			fmt.Println("Wrong number of philosophers. Must be at least 2.")
+			os.Exit(-1)
+		}
 	}
 
 	if argn >= 2 {
-		me, _ = strconv.Atoi(flag.Arg(1))
+		var err error
+		me, err = strconv.Atoi(flag.Arg(1))
+		if err != nil || me < 0 || me >= numPhilosophers {
+			fmt.Printf("Wrong philosopher id. Must be betwen 0 and %d\n", numPhilosophers-1)
+			os.Exit(-1)
+		}
 	}
 
 	if argn >= 3 {

@@ -6,8 +6,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strconv"
-	"strings"
 
 	. "github.com/pspaces/gospace"
 )
@@ -16,7 +16,7 @@ func main() {
 
 	numPhilosophers, port := args()
 
-	uri := strings.Join([]string{"tcp://localhost:", port, "/board"}, "")
+	uri := "tcp://localhost:" + port + "/board"
 	board := NewSpace(uri)
 
 	go waiter(&board, numPhilosophers)
@@ -51,13 +51,19 @@ func args() (numPhilosophers int, port string) {
 	flag.Parse()
 	argn := flag.NArg()
 
-	if argn > 2 {
-		fmt.Printf("Too many arguments\nUsage: [number of philosopers] [port]\n")
-		return
+	if argn < 1 || argn > 2 {
+		fmt.Println("Wrong number of arguments")
+		fmt.Println("Usage: go run main.go <number of philosopers> [port]")
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {
-		numPhilosophers, _ = strconv.Atoi(flag.Arg(0))
+		var err error
+		numPhilosophers, err = strconv.Atoi(flag.Arg(0))
+		if err != nil || numPhilosophers <= 2 {
+			fmt.Println("Wrong number of philosophers. Must be at least 2.")
+			os.Exit(-1)
+		}
 	}
 
 	if argn >= 2 {
