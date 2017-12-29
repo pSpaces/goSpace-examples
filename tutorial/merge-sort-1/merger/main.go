@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strings"
+	"os"
 
 	. "github.com/pspaces/gospace"
 )
@@ -11,7 +11,7 @@ import (
 func main() {
 
 	host, port := args()
-	uri := strings.Join([]string{"tcp://", host, ":", port, "/space"}, "")
+	uri := "tcp://" + host + ":" + port + "/space"
 	space := NewRemoteSpace(uri)
 
 	go merger(&space, 0)
@@ -29,14 +29,20 @@ func merger(space *Space, me int) {
 	for {
 		// We use a lock to avoid deadlocks due to mutually waiting merger workers
 		space.Get("lock")
-		space.Get("sorted", &a, &taskLength, &resultLength)
+		t, _ := space.Get("sorted", &a, &taskLength, &resultLength)
+		a = (t.GetFieldAt(1)).([]int)
+		taskLength = (t.GetFieldAt(2)).(int)
+		resultLength = (t.GetFieldAt(3)).(int)
 		fmt.Printf("Merger %d got %v...\n", me, a)
 		if taskLength == resultLength {
 			space.Put("result", a)
 			space.Put("lock")
 			break
 		} else {
-			space.Get("sorted", &b, &taskLength, &resultLength)
+			t, _ := space.Get("sorted", &b, &taskLength, &resultLength)
+			b = (t.GetFieldAt(1)).([]int)
+			taskLength = (t.GetFieldAt(2)).(int)
+			resultLength = (t.GetFieldAt(3)).(int)
 			fmt.Printf("Merger %d got %v...\n", me, b)
 			space.Put("lock")
 
@@ -88,8 +94,9 @@ func args() (host string, port string) {
 	argn := flag.NArg()
 
 	if argn > 2 {
-		fmt.Printf("Too many arguments\nUsage: [host] [port]\n")
-		return
+		fmt.Println("Too many arguments")
+		fmt.Println("Usage: go run main.go [host] [port]")
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {

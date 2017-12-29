@@ -60,7 +60,7 @@ func args() (numPhilosophers int, port string) {
 	if argn >= 1 {
 		var err error
 		numPhilosophers, err = strconv.Atoi(flag.Arg(0))
-		if err != nil || numPhilosophers <= 2 {
+		if err != nil || numPhilosophers < 2 {
 			fmt.Println("Wrong number of philosophers. Must be at least 2.")
 			os.Exit(-1)
 		}

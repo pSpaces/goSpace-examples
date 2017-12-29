@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strings"
+	"os"
 
 	. "github.com/pspaces/gospace"
 )
@@ -12,7 +12,7 @@ func main() {
 
 	port := args()
 
-	uri := strings.Join([]string{"tcp://localhost:", port, "/space"}, "")
+	uri := "tcp://localhost:" + port + "/space"
 	space := NewSpace(uri)
 
 	// We place the array to be sorted in the tuple space
@@ -23,7 +23,8 @@ func main() {
 	space.Put("lock")
 
 	// Here we wait for our result
-	space.Query("result", &a)
+	t, _ := space.Query("result", &a)
+	a = (t.GetFieldAt(1)).([]int)
 	fmt.Printf("RESULT: %v\n", a)
 
 }
@@ -37,8 +38,9 @@ func args() (port string) {
 	argn := flag.NArg()
 
 	if argn > 1 {
-		fmt.Printf("Too many arguments\nUsage: [port]\n")
-		return
+		fmt.Println("Too many arguments")
+		fmt.Println("Usage: go run main.go [port]")
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {

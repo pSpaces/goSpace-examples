@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strings"
+	"os"
 
 	. "github.com/pspaces/gospace"
 )
@@ -11,7 +11,7 @@ import (
 func main() {
 
 	host, port := args()
-	uri := strings.Join([]string{"tcp://", host, ":", port, "/space"}, "")
+	uri := "tcp://" + host + ":" + port + "/space"
 	space := NewRemoteSpace(uri)
 
 	go splitter(&space, 0)
@@ -25,7 +25,9 @@ func splitter(space *Space, me int) {
 	var a []int
 	var resultLength int
 	for {
-		_, err := space.Get("sort", &a, &resultLength)
+		t, err := space.Get("sort", &a, &resultLength)
+		a = (t.GetFieldAt(1)).([]int)
+		resultLength = (t.GetFieldAt(2)).(int)
 		if err != nil {
 			fmt.Println("Error!")
 			return
@@ -55,8 +57,9 @@ func args() (host string, port string) {
 	argn := flag.NArg()
 
 	if argn > 2 {
-		fmt.Printf("Too many arguments\nUsage: [host] [port]\n")
-		return
+		fmt.Println("Too many arguments")
+		fmt.Println("Usage: go run main.go [host] [port]")
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {
