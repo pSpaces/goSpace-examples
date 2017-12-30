@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	. "github.com/pspaces/gospace"
 )
@@ -27,11 +28,16 @@ func main() {
 
 	for {
 		// Get RPC request
-		mySpace.Get(&callID, "func", &f)
+		t, _ := mySpace.Get(&callID, "func", &f)
+		callID = (t.GetFieldAt(0)).(string)
+		f = (t.GetFieldAt(2)).(string)
 		fmt.Printf("RPC %s received: f(%s", callID, f)
 		switch f {
 		case "foo":
-			mySpace.Get(callID, "args", &x, &y, &z)
+			t, _ := mySpace.Get(callID, "args", &x, &y, &z)
+			x = (t.GetFieldAt(2)).(int)
+			y = (t.GetFieldAt(3)).(int)
+			z = (t.GetFieldAt(4)).(int)
 			fmt.Printf("%d,%d,%d)...\n", x, y, z)
 			fmt.Println("Computing RPC...")
 			result := foo(x, y, z)
@@ -39,7 +45,9 @@ func main() {
 			mySpace.Put(callID, "result", result)
 
 		case "bar":
-			mySpace.Get(callID, "args", &a, &b)
+			t, _ := mySpace.Get(callID, "args", &a, &b)
+			a = (t.GetFieldAt(2)).(string)
+			b = (t.GetFieldAt(3)).(string)
 			fmt.Printf("%s,%s)...\n", a, b)
 			fmt.Println("Computing RPC...")
 			result := bar(a, b)
@@ -76,7 +84,7 @@ func args() (host string, port string, space string) {
 	if argn > 3 {
 		fmt.Println("Too many arguments")
 		fmt.Println("Usage: go run main.go [address] [port] [space]")
-		return
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {

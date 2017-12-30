@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	. "github.com/pspaces/gospace"
 )
@@ -23,9 +24,9 @@ func main() {
 	server.Put("Alice1", "args", 1, 2, 3)
 
 	// Get the result
-	var z int
-	server.Get("Alice1", "result", &z)
-	fmt.Printf("Server says foo(1,2,3) = %d \n", z)
+	var u int
+	t, _ := server.Get("Alice1", "result", &u)
+	fmt.Printf("Server says foo(1,2,3) = %d \n", (t.GetFieldAt(2)).(int))
 
 	// Invoke bar("a","b") remotely
 	server.Put("Alice2", "func", "bar")
@@ -33,8 +34,8 @@ func main() {
 
 	// Get the result
 	var c string
-	server.Get("Alice2", "result", &c)
-	fmt.Printf("Server says bar(\"a\",\"b\") = %s \n", c)
+	t, _ = server.Get("Alice2", "result", &c)
+	fmt.Printf("Server says bar(\"a\",\"b\") = %s \n", (t.GetFieldAt(2)).(string))
 
 }
 
@@ -51,7 +52,7 @@ func args() (host string, port string, space string) {
 	if argn > 3 {
 		fmt.Println("Too many arguments")
 		fmt.Println("Usage: go run main.go [address] [port] [space]")
-		return
+		os.Exit(-1)
 	}
 
 	if argn >= 1 {
