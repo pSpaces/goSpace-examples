@@ -22,7 +22,9 @@ func main() {
 
 	for {
 		// Get and display chat messages
-		chat.Get(&who, &message)
+		t, _ := chat.Get(&who, &message)
+		who = (t.GetFieldAt(0)).(string)
+		message = (t.GetFieldAt(1)).(string)
 		fmt.Printf("%s: %s \n", who, message)
 	}
 
