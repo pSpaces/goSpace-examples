@@ -17,8 +17,7 @@ func main() {
 	go bob(&fridge)
 	go charlie(&fridge)
 
-	for {
-	}
+	fridge.Get("done")
 
 }
 
@@ -33,7 +32,9 @@ func bob(fridge *Space) {
 	var quantity int
 	fridge.Query("shop!")
 	for {
-		fridge.Get(&item, &quantity)
+		t, _ := fridge.Get(&item, &quantity)
+		item = (t.GetFieldAt(0)).(string)
+		quantity = (t.GetFieldAt(1)).(int)
 		fmt.Printf("Bob: I am shopping %d items of %s...\n", quantity, item)
 	}
 }
@@ -41,10 +42,12 @@ func bob(fridge *Space) {
 func charlie(fridge *Space) {
 	var item string
 	var quantity int
-	_, err := fridge.GetP(fridge, "shop!")
-	if err != nil {
+	_, err := fridge.GetP("shop!")
+	if err == nil {
 		for {
-			fridge.Get(&item, &quantity)
+			t, _ := fridge.Get(&item, &quantity)
+			item = (t.GetFieldAt(0)).(string)
+			quantity = (t.GetFieldAt(1)).(int)
 			fmt.Printf("Charlie: I am shopping %d items of %s...\n", quantity, item)
 		}
 	} else {
