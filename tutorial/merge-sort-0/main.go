@@ -32,26 +32,28 @@ func main() {
 	}
 
 	// Here we wait for our result
-	space.Query("result", &a)
-	fmt.Printf("RESULT: %v\n", a)
+	t, _ := space.Query("result", &a)
+	fmt.Printf("RESULT: %v\n", (t.GetFieldAt(1)).([]int))
 
 }
 
 func splitter(space *Space, me int) {
 	var a []int
-	var resultLentgh int
+	var resultLength int
 	for {
-		space.Get("sort", &a, &resultLentgh)
+		t, _ := space.Get("sort", &a, &resultLength)
+		a = (t.GetFieldAt(1)).([]int)
+		resultLength = (t.GetFieldAt(2)).(int)
 		fmt.Printf("Splitter %d got %v...\n", me, a)
 		// This should not happen
 		if len(a) == 0 {
 			continue
 		}
 		if len(a) == 1 {
-			space.Put("sorted", a, 1, resultLentgh)
+			space.Put("sorted", a, 1, resultLength)
 		} else {
-			space.Put("sort", a[0:len(a)/2], resultLentgh)
-			space.Put("sort", a[len(a)/2:len(a)], resultLentgh)
+			space.Put("sort", a[0:len(a)/2], resultLength)
+			space.Put("sort", a[len(a)/2:len(a)], resultLength)
 		}
 	}
 }
@@ -64,14 +66,20 @@ func merger(space *Space, me int) {
 	for {
 		// We use a lock to avoid deadlocks due to mutually waiting merger workers
 		space.Get("lock")
-		space.Get("sorted", &a, &taskLength, &resultLength)
+		t, _ := space.Get("sorted", &a, &taskLength, &resultLength)
+		a = (t.GetFieldAt(1)).([]int)
+		taskLength = (t.GetFieldAt(2)).(int)
+		resultLength = (t.GetFieldAt(3)).(int)
 		fmt.Printf("Merger %d got %v...\n", me, a)
 		if taskLength == resultLength {
 			space.Put("result", a)
 			space.Put("lock")
 			break
 		} else {
-			space.Get("sorted", &b, &taskLength, &resultLength)
+			t, _ := space.Get("sorted", &b, &taskLength, &resultLength)
+			b = (t.GetFieldAt(1)).([]int)
+			taskLength = (t.GetFieldAt(2)).(int)
+			resultLength = (t.GetFieldAt(3)).(int)
 			fmt.Printf("Merger %d got %v...\n", me, b)
 			space.Put("lock")
 
