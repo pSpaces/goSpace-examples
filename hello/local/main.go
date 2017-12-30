@@ -15,7 +15,8 @@ func main() {
 	// Get a message from the space
 	// via pattern matching.
 	var message string
-	inbox.Get(&message)
+	t, _ := inbox.Get(&message)
+	message = (t.GetFieldAt(0)).(string)
 
 	fmt.Println(message)
 }
