@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+
 	. "github.com/pspaces/gospace"
 )
 
@@ -43,13 +44,14 @@ func main() {
 
 	// Looking for a tuple with pattern matching.
 	var numberOfBottles int
-	_, err3 := fridge.QueryP("milk", &numberOfBottles)
+	t, err3 := fridge.QueryP("milk", &numberOfBottles)
+	numberOfBottles = (t.GetFieldAt(1)).(int)
 
 	// Updating a tuple.
 	if err3 == nil && numberOfBottles <= 10 {
 		fmt.Println("We plan to buy milk, but not enough...")
-		fridge.GetP("milk", &numberOfBottles)
-		fridge.Put("milk", numberOfBottles+1)
+		t, _ := fridge.GetP("milk", &numberOfBottles)
+		fridge.Put("milk", (t.GetFieldAt(1)).(int)+1)
 	}
 
 	var item string
