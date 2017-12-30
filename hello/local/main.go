@@ -16,7 +16,6 @@ func main() {
 	// via pattern matching.
 	var message string
 	t, _ := inbox.Get(&message)
-	message = (t.GetFieldAt(0)).(string)
 
-	fmt.Println(message)
+	fmt.Println((t.GetFieldAt(0)).(string))
 }
