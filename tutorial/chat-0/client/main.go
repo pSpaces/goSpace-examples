@@ -30,7 +30,10 @@ func main() {
 	for {
 		message, _ := reader.ReadString('\n')
 		message = strings.TrimSpace(message)
-		chat.Put(name, message)
+		_, err := chat.Put(name, message)
+		if err != nil {
+			fmt.Printf("Something went wrong when trying to send a message: %v\n", err)
+		}
 	}
 }
 
