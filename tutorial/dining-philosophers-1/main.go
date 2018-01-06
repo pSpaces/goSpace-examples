@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+
 	. "github.com/pspaces/gospace"
 )
 
@@ -66,7 +67,10 @@ func philosopher(board *Space, me int) {
 		// Return the forks and the ticket (put the corresponding tuples).
 		board.Put("fork", left)
 		board.Put("fork", right)
+
+		// We can now release the ticket
 		board.Put("ticket")
+
 		fmt.Printf("Philosopher %d put both forks and a ticket on the table\n", me)
 	}
 }

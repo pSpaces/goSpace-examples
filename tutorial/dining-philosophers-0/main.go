@@ -1,15 +1,16 @@
 // This is a model of the classic problem of the dining philosophers.
-// The solution is based on using tickets to limit concurrency.
+// This is a wrong solutions
 
 package main
 
 import (
 	"fmt"
+
 	. "github.com/pspaces/gospace"
 )
 
 // N defines the number of philosophers.
-const N = 10
+const N = 100
 
 func main() {
 	board := NewSpace("board")

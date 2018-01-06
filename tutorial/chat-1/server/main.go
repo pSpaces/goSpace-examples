@@ -53,7 +53,7 @@ func loungeWelcome(lounge *Space, host string, port string) {
 			room := NewSpace(roomURI)
 			go show(&room, roomID)
 		}
-		fmt.Printf("Telling %s to go for room %s on uri %s", who, roomID, roomURI)
+		fmt.Printf("Telling %s to go for room %s on uri %s\n", who, roomID, roomURI)
 		lounge.Put("roomURI", who, roomID, roomURI)
 	}
 }
