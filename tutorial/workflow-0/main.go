@@ -1,7 +1,7 @@
 // This is an implementation of the following simple workflow:
 //
 //      /---> Bob -------\
-//     |								 |
+//     |                 |
 //     |                 v
 // Alice                Dave
 //     |                 ^
