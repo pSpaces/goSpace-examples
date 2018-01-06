@@ -19,57 +19,58 @@ import (
 
 func main() {
 
-	//runtime.GOMAXPROCS(100)
-
+	// Tuple space for the rules regulating the order of tasks
 	rules := NewSpace("tcp://localhost:31415/rules")
-	tokens := NewSpace("tcp://localhost:31146/tokens")
-
 	rules.Put("<", "Alice", "Bob")
 	rules.Put("<", "Alice", "Charlie")
 	rules.Put("<", "Bob", "Dave")
 	rules.Put("<", "Charlie", "Dave")
 	rules.Put("<", "Dave", "Master")
 
-	go coordinateTask(task, "Alice", &rules, &tokens)
-	go coordinateTask(task, "Bob", &rules, &tokens)
-	go coordinateTask(task, "Charlie", &rules, &tokens)
-	go coordinateTask(task, "Dave", &rules, &tokens)
+	// Tuple space for the tokens used to signal termination
+	tokens := NewSpace("tcp://localhost:31146/tokens")
 
+	// Launch all task coordinators
+	// Note that the first argument is the task as a closure
+	go coordinateTask(func() { task("Alice") }, "Alice", &rules, &tokens)
+	go coordinateTask(func() { task("Bob") }, "Bob", &rules, &tokens)
+	go coordinateTask(func() { task("Charlie") }, "Charlie", &rules, &tokens)
+	go coordinateTask(func() { task("Dave") }, "Dave", &rules, &tokens)
+
+	// Wait for the Dave to finish
 	tokens.Get("token", "Dave", "Master")
 
 }
 
+// All task execute the same code
 func task(me string) {
-	time.Sleep(0 * time.Second)
 	fmt.Printf("%s is running...\n", me)
+	time.Sleep(1 * time.Second)
+	fmt.Printf("%s done!\n", me)
 }
 
-func coordinateTask(task func(string), me string, rules *Space, tokens *Space) {
+func coordinateTask(task func(), me string, rules *Space, tokens *Space) {
 
 	// Read order constraints
 	var who string
-	input, _ := rules.QueryAll("<", &who, me)
-	output, _ := rules.QueryAll("<", me, &who)
+	before, _ := rules.QueryAll("<", &who, me)
+	after, _ := rules.QueryAll("<", me, &who)
 
 	// Wait for tokens of previous tasks
-	for _, edge := range input {
+	for _, edge := range before {
 		who = (edge.GetFieldAt(1)).(string)
 		fmt.Printf("%s is waiting for %s...\n", me, who)
 		tokens.Get("token", who, me)
 		fmt.Printf("%s got token from %s...\n", me, who)
-		//tokens, _ := space.QueryAll("token", &s1, &s2)
-		//fmt.Println(tokens)
 	}
 
 	// Execute task
-	task(me)
+	task()
 
-	// Send tokens to next taks
-	for _, edge := range output {
+	// Send tokens to tasks that come next
+	for _, edge := range after {
 		who = (edge.GetFieldAt(2)).(string)
 		tokens.Put("token", me, who)
 		fmt.Printf("%s sent token to %s...\n", me, who)
-		//tokens, _ := space.QueryAll("token", &s1, &s2)
-		//fmt.Println(tokens)
 	}
 }
