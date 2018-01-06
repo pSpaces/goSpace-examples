@@ -38,7 +38,7 @@ func main() {
 	go coordinateTask(func() { task("Dave") }, "Dave", &rules, &tokens)
 
 	// Wait for the Dave to finish
-	tokens.Get("token", "Dave", "Master")
+	tokens.Get("Dave", "Master")
 
 }
 
@@ -60,7 +60,7 @@ func coordinateTask(task func(), me string, rules *Space, tokens *Space) {
 	for _, edge := range before {
 		who = (edge.GetFieldAt(0)).(string)
 		fmt.Printf("%s is waiting for %s...\n", me, who)
-		tokens.Get("token", who, me)
+		tokens.Get(who, me)
 		fmt.Printf("%s got token from %s...\n", me, who)
 	}
 
@@ -70,7 +70,7 @@ func coordinateTask(task func(), me string, rules *Space, tokens *Space) {
 	// Send tokens to tasks that come next
 	for _, edge := range after {
 		who = (edge.GetFieldAt(1)).(string)
-		tokens.Put("token", me, who)
+		tokens.Put(me, who)
 		fmt.Printf("%s sent token to %s...\n", me, who)
 	}
 }
