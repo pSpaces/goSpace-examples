@@ -59,9 +59,9 @@ func coordinateTask(task func(), me string, rules *Space, tokens *Space) {
 	// Wait for tokens of previous tasks
 	for _, edge := range before {
 		who = (edge.GetFieldAt(0)).(string)
-		fmt.Printf("%s is waiting for %s...\n", me, who)
+		//fmt.Printf("%s is waiting for %s...\n", me, who)
 		tokens.Get(who, me)
-		fmt.Printf("%s got token from %s...\n", me, who)
+		//fmt.Printf("%s got token from %s...\n", me, who)
 	}
 
 	// Execute task
@@ -71,6 +71,6 @@ func coordinateTask(task func(), me string, rules *Space, tokens *Space) {
 	for _, edge := range after {
 		who = (edge.GetFieldAt(1)).(string)
 		tokens.Put(me, who)
-		fmt.Printf("%s sent token to %s...\n", me, who)
+		//fmt.Printf("%s sent token to %s...\n", me, who)
 	}
 }

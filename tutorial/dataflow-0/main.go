@@ -165,9 +165,11 @@ func aggregator(streams *Space, me string) {
 	var sum float32
 	const N = 100.0
 
-	streams.Query(&source, me, &sourceURI)
+	t, _ := streams.Query(&source, me, &sourceURI)
+	sourceURI = (t.GetFieldAt(2)).(string)
 	sourceStream := NewRemoteSpace(sourceURI)
-	streams.Query(me, &target, &targetURI)
+	t, _ = streams.Query(me, &target, &targetURI)
+	targetURI = (t.GetFieldAt(2)).(string)
 	targetStream := NewRemoteSpace(targetURI)
 
 	for {
