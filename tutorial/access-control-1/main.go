@@ -1,4 +1,6 @@
-// This is a simple access control system
+// This is a simple access control system that implements
+// a simple accss control language
+// see https://gitlab.gbar.dtu.dk/pSpaces/brainstorm/blob/master/secure-spaces.md
 
 package main
 
