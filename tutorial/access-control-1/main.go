@@ -194,6 +194,14 @@ func check(rules *Space, policy string, subject string, action string, template 
 			return check(rules, policy, subject, action, template)
 		}
 
+	case ">>":
+		policy = (t.GetFieldAt(2)).(string)
+		decision = check(rules, policy, subject, action, template)
+		if decision == "maybe" {
+			policy = (t.GetFieldAt(3)).(string)
+			return check(rules, policy, subject, action, template)
+		}
+
 	default:
 		return "maybe"
 
