@@ -54,7 +54,7 @@ func main() {
 func welcome(lobby *Space, idProvider *Space) {
 	var s string
 	var username string
-	sessionKey := 33333
+	sessionKey := 31417
 
 	for {
 		// get request for a new session of the login protocol
@@ -64,7 +64,7 @@ func welcome(lobby *Space, idProvider *Space) {
 		sessionURL := "tcp://localhost:" + strconv.Itoa(sessionKey) + "/session" + strconv.Itoa(sessionKey)
 		fmt.Printf("Creating session space %s...\n", sessionURL)
 		session := NewSpace(sessionURL)
-		session.Put("go")
+		session.QueryP("whatever")
 		lobby.Put("session", username, sessionURL, "Client2Server", "Server2Client")
 		go server(sessionURL, "Server2Client", "Client2Server", "Server2IdProvider", "IdProvider2Server")
 		idProvider.Put("session", sessionURL, "IdProvider2Server", "Server2IdProvider")
@@ -82,23 +82,27 @@ func client(server *Space, username string, password string) {
 	// request session of the protocol
 	server.Put("login", username)
 	t, _ := server.Get("session", username, &s, &s, &s)
-	sessionURL = (t.GetFieldAt(1)).(string)
-	toServer = (t.GetFieldAt(2)).(string)
-	fromServer = (t.GetFieldAt(3)).(string)
+	sessionURL = (t.GetFieldAt(2)).(string)
+	toServer = (t.GetFieldAt(3)).(string)
+	fromServer = (t.GetFieldAt(4)).(string)
 
 	// run session of the protocol
 	session := NewRemoteSpace(sessionURL)
-	fmt.Printf("Starting client on session %s...", sessionURL)
+	fmt.Printf("Starting client on session %s...\n", sessionURL)
 
 	// The protocol
+	session.Put("crap")
+	fmt.Printf("Client: sending %s, %s, %s\n", toServer, username, password)
 	session.Put(toServer, username, password)
 
+	fmt.Printf("Client: waiting for the branch...\n")
 	t, _ = session.Get(fromServer, &s)
 	branch := (t.GetFieldAt(i)).(string)
 	if branch == "true" {
 		for {
 			if enoughData() {
 				session.Put(toServer, "continue")
+				fmt.Printf("Client: waiting for data from the server...\n")
 				t, _ = session.Get(fromServer, &i)
 			} else {
 				session.Put(toServer, "break")
@@ -106,6 +110,7 @@ func client(server *Space, username string, password string) {
 			}
 		}
 	} else {
+		fmt.Printf("Client: waiting for bad news...\n")
 		session.Get(fromServer, "ko")
 	}
 }
@@ -131,18 +136,22 @@ func server(sessionURL string, toClient string, fromClient string, toIdProvider 
 	session := NewRemoteSpace(sessionURL)
 
 	// The protocol
+	fmt.Printf("Server: waiting for user credentials...\n")
 	t, _ := session.Get(fromClient, &s, &s)
 	username = (t.GetFieldAt(1)).(string)
 	password = (t.GetFieldAt(2)).(string)
-	fmt.Printf("Server got credentials on session %s...\n", sessionURL)
+	fmt.Printf("Server got credentials ()%s,%s) on session %s...\n", sessionURL, username, password)
 	session.Put(toIdProvider, username, password)
+	fmt.Printf("Server: waiting for response from ID provider...\n")
 	session.Get(fromIdProvider, &response)
 	fmt.Printf("Server got response from id provider on session %s...\n", sessionURL)
 	if response == "ok" {
 		session.Put(toClient, "then")
 		for {
+			fmt.Printf("Server: waiting for the client to decide on continue/break...\n")
 			session.Get(fromClient, &s)
 			if (t.GetFieldAt(1)).(string) == "continue" {
+				fmt.Printf("Server: waiting for user to ask for data...\n")
 				_, _ = session.Get(fromClient, "getData")
 				session.Put(toClient, rand.Intn(10))
 			} else {
@@ -178,6 +187,7 @@ func idProviderSession(users *Space, sessionURL string, toServer string, fromSer
 	session := NewRemoteSpace(sessionURL)
 
 	// The protocol
+	fmt.Printf("ID provider: waiting for user credentials...\n")
 	t, _ := session.Get(fromServer, &s, &s)
 	username = (t.GetFieldAt(1)).(string)
 	password = (t.GetFieldAt(1)).(string)
