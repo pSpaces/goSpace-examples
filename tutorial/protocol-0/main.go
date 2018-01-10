@@ -1,108 +1,191 @@
-// This is a simple login protocol
-// Client -> Server : (login,name,pwd)
-// Server -> IdProvider : (login,mame,pwd)
-// IdProvider -> Server : "ok"
-// Server -> Client
-// IdProvider -> Server: "ko"
-// Server -> Client : "ko"
+// user.(username,password) -> server.credentials(string,string) ;
+// server.(username(credentials),password(credentials)) -> identityProvider.credentials(string,string) ;
+// identityProvider.Put(check(credentials)) -> server.response(string) ;
+// if response then
+//     while notEnoughData()@client do {
+//         client.("getData") -> server.t("getData")
+//         server.(generateData()) ->client.data(int))
+//     }
+// else
+//     server.("ko") -> user.response("ko")
 
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"math/rand"
+	"os"
 	"strconv"
+	"strings"
 
 	. "github.com/pspaces/gospace"
 )
 
 func main() {
 
-	server := NewSpace("tcp://localhost:31415/server")
+	// This is the server lobby
+	lobby := NewSpace("tcp://localhost:31415/lobby")
+
+	// create identity database with some users
 	google := NewSpace("tcp://localhost:31416/google")
 	google.Put("Alice", "1234")
 	google.Put("Bob", "1234")
 
-	go client(&server, "Alice", "1234")
-	go client(&server, "Bob", "1234")
-	go client(&server, "Charlie", "1234")
-	go welcome(&server, &google)
+	// launch welcome
 	go idProvider(&google)
+	go welcome(&lobby, &google)
 
+	// simulate a user
 	for {
+		// Read username
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter username: ")
+		username, _ := reader.ReadString('\n')
+		username = strings.TrimSpace(username)
+		fmt.Print("Enter password: ")
+		password, _ := reader.ReadString('\n')
+		password = strings.TrimSpace(password)
+		client(&lobby, username, password)
 	}
+
 }
 
-func welcome(lounge *Space, idProvider *Space) {
+func welcome(lobby *Space, idProvider *Space) {
+	var s string
 	var username string
 	sessionKey := 33333
+
 	for {
 		// get request for a new session of the login protocol
-		lounge.Get("login", &username)
+		t, _ := lobby.Get("login", &s)
+		username = (t.GetFieldAt(1)).(string)
 		fmt.Printf("Login request from %s...\n", username)
 		sessionURL := "tcp://localhost:" + strconv.Itoa(sessionKey) + "/session" + strconv.Itoa(sessionKey)
 		fmt.Printf("Creating session space %s...\n", sessionURL)
 		session := NewSpace(sessionURL)
-		session.Put("whatever")
-		lounge.Put("session", username, sessionURL, "ClientServer")
-		go server(sessionURL, "ClientServer", "ServerIdP")
-		idProvider.Put("session", sessionURL, "ServerIdP")
+		session.Put("go")
+		lobby.Put("session", username, sessionURL, "Client2Server", "Server2Client")
+		go server(sessionURL, "Server2Client", "Client2Server", "Server2IdProvider", "IdProvider2Server")
+		idProvider.Put("session", sessionURL, "IdProvider2Server", "Server2IdProvider")
 		sessionKey++
 	}
 }
 
 func client(server *Space, username string, password string) {
+	var s string
+	var i int
 	var sessionURL string
-	var reply string
-	var channel string
+	var toServer string
+	var fromServer string
 
 	// request session of the protocol
 	server.Put("login", username)
-	server.Get("session", username, &sessionURL, &channel)
+	t, _ := server.Get("session", username, &s, &s, &s)
+	sessionURL = (t.GetFieldAt(1)).(string)
+	toServer = (t.GetFieldAt(2)).(string)
+	fromServer = (t.GetFieldAt(3)).(string)
 
 	// run session of the protocol
 	session := NewRemoteSpace(sessionURL)
-	session.Put(channel, username, password)
-	session.Get(channel, &reply)
+	fmt.Printf("Starting client on session %s...", sessionURL)
 
-	fmt.Printf("%s: got %s\n", username, reply)
+	// The protocol
+	session.Put(toServer, username, password)
+
+	t, _ = session.Get(fromServer, &s)
+	branch := (t.GetFieldAt(i)).(string)
+	if branch == "true" {
+		for {
+			if enoughData() {
+				session.Put(toServer, "continue")
+				t, _ = session.Get(fromServer, &i)
+			} else {
+				session.Put(toServer, "break")
+				break
+			}
+		}
+	} else {
+		session.Get(fromServer, "ko")
+	}
 }
 
-func server(sessionURL string, clientChannel string, idProviderChannel string) {
+func enoughData() bool {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("More? (yes/no)")
+	reply, _ := reader.ReadString('\n')
+	reply = strings.TrimSpace(reply)
+	if reply == "yes" {
+		return true
+	}
+	return false
+}
+
+func server(sessionURL string, toClient string, fromClient string, toIdProvider string, fromIdProvider string) {
+	var s string
 	var username string
 	var password string
-	var reply string
+	var response string
 
 	fmt.Printf("Starting server on session %s...\n", sessionURL)
 	session := NewRemoteSpace(sessionURL)
 
-	session.Get(clientChannel, &username, &password)
+	// The protocol
+	t, _ := session.Get(fromClient, &s, &s)
+	username = (t.GetFieldAt(1)).(string)
+	password = (t.GetFieldAt(2)).(string)
 	fmt.Printf("Server got credentials on session %s...\n", sessionURL)
-	session.Put(idProviderChannel, username, password)
-	session.Get(idProviderChannel, &reply)
-	fmt.Printf("Server got reply from id provider on session %s...\n", sessionURL)
-	session.Put(clientChannel, reply)
-}
-
-func idProvider(users *Space) {
-	var sessionURL string
-	var channel string
-	for {
-		users.Get("session", &sessionURL, &channel)
-		fmt.Printf("Starting id provider session %s...\n", sessionURL)
-		go idProviderSession(users, sessionURL, channel)
+	session.Put(toIdProvider, username, password)
+	session.Get(fromIdProvider, &response)
+	fmt.Printf("Server got response from id provider on session %s...\n", sessionURL)
+	if response == "ok" {
+		session.Put(toClient, "then")
+		for {
+			session.Get(fromClient, &s)
+			if (t.GetFieldAt(1)).(string) == "continue" {
+				_, _ = session.Get(fromClient, "getData")
+				session.Put(toClient, rand.Intn(10))
+			} else {
+				break
+			}
+		}
+	} else {
+		session.Put(toClient, "else")
+		session.Put(toClient, "ko")
 	}
 }
 
-func idProviderSession(users *Space, sessionURL string, channel string) {
+func idProvider(users *Space) {
+	var s string
+	var sessionURL string
+	var toServer string
+	var fromServer string
+
+	for {
+		t, _ := users.Get("session", &s, &s, &s)
+		sessionURL = (t.GetFieldAt(1)).(string)
+		toServer = (t.GetFieldAt(2)).(string)
+		fromServer = (t.GetFieldAt(3)).(string)
+		fmt.Printf("Starting id provider session %s...\n", sessionURL)
+		go idProviderSession(users, sessionURL, toServer, fromServer)
+	}
+}
+
+func idProviderSession(users *Space, sessionURL string, toServer string, fromServer string) {
+	var s string
 	var username string
 	var password string
 	session := NewRemoteSpace(sessionURL)
-	session.Get(channel, &username, &password)
+
+	// The protocol
+	t, _ := session.Get(fromServer, &s, &s)
+	username = (t.GetFieldAt(1)).(string)
+	password = (t.GetFieldAt(1)).(string)
 	fmt.Printf("Id provider got credentials in session %s...\n", sessionURL)
 	_, err := users.QueryP(username, password)
 	if err == nil {
-		session.Put(channel, "ok")
+		session.Put(toServer, "ok")
 	} else {
-		session.Put(channel, "ko")
+		session.Put(toServer, "ko")
 	}
 }
