@@ -69,6 +69,7 @@ func welcome(lobby *Space, idProvider *Space) {
 		go server(sessionURL, "Server2Client", "Client2Server", "Server2IdProvider", "IdProvider2Server")
 		idProvider.Put("session", sessionURL, "IdProvider2Server", "Server2IdProvider")
 		sessionKey++
+		session.Get("go")
 	}
 }
 
