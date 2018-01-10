@@ -44,7 +44,7 @@ func main() {
 
 	user("Alice", &lobby)
 	user("Bob", &lobby)
-	user("Mallory", &lobby)
+	user("Charlie", &lobby)
 
 	space.Query("stop")
 
