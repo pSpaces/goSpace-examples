@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pspaces/goSpace-examples/secure/certificate"
 	. "github.com/pspaces/gospace"
@@ -25,6 +26,19 @@ func main() {
 
 	// Put a message in the space.
 	spc.Put("Hello, Alice!")
+
+	println("Message put")
+
+	time.Sleep(5 * time.Second)
+
+	println("Getting message")
+
+	var message string
+	spc.Get(&message)
+
+	println("Message get")
+
+	fmt.Printf("%s\n", message)
 }
 
 func args() (host string, port string) {

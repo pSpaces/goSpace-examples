@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pspaces/goSpace-examples/secure/certificate"
 	. "github.com/pspaces/gospace"
@@ -26,10 +27,13 @@ func main() {
 
 	// Get a message from the space
 	// via pattern matching.
-	var message string
-	spc.Get(&message)
+	// var message string
+	// spc.Get(&message)
 
-	fmt.Printf("%s\n", message)
+	// fmt.Printf("%s\n", message)
+
+	fmt.Printf("%v\n", spc)
+	time.Sleep(20 * time.Minute)
 }
 
 func args() (host string, port string) {

@@ -57,7 +57,7 @@ func verify(clientCert, rootCert *x509.Certificate) error {
 	pool := x509.NewCertPool()
 	pool.AddCert(rootCert)
 	opts := x509.VerifyOptions{
-		DNSName: "any",
+		DNSName: "localhost",
 		Roots:   pool,
 	}
 	_, err := clientCert.Verify(opts)
@@ -75,7 +75,7 @@ func client(addr string, rootCertPEM, certPEM, privPEM []byte) *tls.Config {
 	clientConfig := &tls.Config{
 		Rand:               randReader,
 		Certificates:       []tls.Certificate{cert},
-		ServerName:         "any",
+		ServerName:         "localhost",
 		RootCAs:            pool,
 		InsecureSkipVerify: false,
 	}
@@ -241,7 +241,7 @@ func generateCert(signer *CertAndKey) (*CertAndKey, error) {
 	template := x509.Certificate{
 		SerialNumber: new(big.Int),
 		Subject: pkix.Name{
-			CommonName:   "any",
+			CommonName:   "localhost",
 			Organization: []string{"hmm"},
 		},
 		NotBefore: now.Add(-5 * time.Minute).UTC(),
