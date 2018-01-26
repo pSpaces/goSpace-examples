@@ -25,11 +25,12 @@ func main() {
 	spc := NewRemoteSpace(uri, config)
 
 	// Put a message in the space.
-	spc.Put("Hello, Alice!")
+	t, b := spc.Put("Hello, Alice!")
 
+	fmt.Println("Received: ", t, b)
 	println("Message put")
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	println("Getting message")
 

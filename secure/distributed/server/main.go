@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pspaces/goSpace-examples/secure/certificate"
 	. "github.com/pspaces/gospace"
@@ -33,7 +32,8 @@ func main() {
 	// fmt.Printf("%s\n", message)
 
 	fmt.Printf("%v\n", spc)
-	time.Sleep(20 * time.Minute)
+	for {
+	}
 }
 
 func args() (host string, port string) {
