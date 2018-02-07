@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/pspaces/goSpace-examples/secure/certificate"
 	. "github.com/pspaces/gospace"
+	"github.com/pspaces/gospace/shared"
 )
 
 func main() {
@@ -16,24 +18,29 @@ func main() {
 		return
 	}
 
-	config, _ := certificate.GenerateCertConfigs()
-
 	name := "space"
 
+	// Create URI.
 	uri := strings.Join([]string{"tcp://", host, port, "/", name}, "")
 
+	// Create config for authentication.
+	config, _ := certificate.GenerateCertConfigs()
+
+	// Setup the space with the URI and config.
 	spc := NewSpace(uri, config)
 
-	// Get a message from the space
-	// via pattern matching.
-	// var message string
-	// spc.Get(&message)
+	// The is necessary for the current pSpace implementation.
+	// TODO: remove this once merged into aggregation branch.
+	shared.CreateTypeField(reflect.TypeOf("abc"))
 
-	// fmt.Printf("%s\n", message)
+	// Put a message in the space.
+	t, _ := spc.Put("Hello, Alice!")
+	fmt.Println("Put tuple securely into space: ", t)
 
-	fmt.Printf("%v\n", spc)
-	for {
-	}
+	// Get a number from the space that doesn't exists.
+	var number int
+	spc.Get(&number)
+
 }
 
 func args() (host string, port string) {
