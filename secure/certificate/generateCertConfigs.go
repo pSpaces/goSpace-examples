@@ -44,7 +44,7 @@ func GenerateCertConfigs() (*tls.Config, *tls.Config) {
 		log.Printf("server error: %v", err)
 	}
 
-	clientConfig := client("addr", rootCert.CertPEM(), clientCert.CertPEM(), clientCert.PrivateKeyPEM())
+	clientConfig := client(rootCert.CertPEM(), clientCert.CertPEM(), clientCert.PrivateKeyPEM())
 	if err != nil {
 		log.Printf("client error: %v", err)
 		select {}
@@ -66,7 +66,7 @@ func verify(clientCert, rootCert *x509.Certificate) error {
 
 // client dials the given address using the appropriate
 // security primitives.
-func client(addr string, rootCertPEM, certPEM, privPEM []byte) *tls.Config {
+func client(rootCertPEM, certPEM, privPEM []byte) *tls.Config {
 	pool, _ := certPool(rootCertPEM)
 	cert, _ := tls.X509KeyPair(certPEM, privPEM)
 	// if err != nil {
@@ -120,10 +120,13 @@ func server(certPEM, privPEM []byte, rootCert *CertAndKey) *tls.Config {
 	}
 
 	cfg := &tls.Config{
-		Rand:         randReader,
-		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    pool,
+		Rand:               randReader,
+		Certificates:       []tls.Certificate{cert},
+		ClientAuth:         tls.RequireAndVerifyClientCert,
+		ClientCAs:          pool,
+		ServerName:         "localhost",
+		RootCAs:            pool,
+		InsecureSkipVerify: false,
 	}
 
 	return cfg

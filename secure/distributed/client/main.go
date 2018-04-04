@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pspaces/goSpace-examples/secure/certificate"
 	. "github.com/pspaces/gospace"
@@ -18,28 +17,21 @@ func main() {
 
 	name := "space"
 
+	// Create URI.
 	uri := strings.Join([]string{"tcp://", host, port, "/", name}, "")
 
+	// Create config for authentication.
 	_, config := certificate.GenerateCertConfigs()
 
+	// Setup the remote space with the URI and config.
 	spc := NewRemoteSpace(uri, config)
 
-	// Put a message in the space.
-	t, b := spc.Put("Hello, Alice!")
-
-	fmt.Println("Received: ", t, b)
-	println("Message put")
-
-	time.Sleep(1 * time.Second)
-
-	println("Getting message")
-
+	// Get message from the remote space.
 	var message string
 	spc.Get(&message)
 
-	println("Message get")
-
-	fmt.Printf("%s\n", message)
+	// Print message received.
+	fmt.Println("Message received through a secure channel: ", message)
 }
 
 func args() (host string, port string) {
