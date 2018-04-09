@@ -7,22 +7,25 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	. "github.com/pspaces/gospace"
-	container "github.com/pspaces/gospace/container"
+	"github.com/pspaces/gospace"
+	"github.com/pspaces/gospace/container"
+	"github.com/pspaces/gospace/function"
 )
 
-// Size of the "map", coordinates are in [0..MAXX,0..MAXY]
+// MAXX is the size of the X coordinate in a "map".
 const MAXX = 100
+
+// MAXY is the size of the Y coordinate in a "map". Coordinates are in [0..MAXX,0..MAXY]
 const MAXY = 100
 
-// Number of rows and columns to discretize the map into areas of interest
-// Cell = area of interest
+// XAREAS is the number of rows to discretize the map into areas of interest.
 const XAREAS = 2
+
+// YAREAS is the number of rows to discretize the map into areas of interest.
 const YAREAS = 2
 
 func main() {
@@ -30,45 +33,53 @@ func main() {
 	host, port, ndevices := args()
 
 	// creating a new policy
-	policy := NewComposablePolicy()
+	policy := gospace.NewComposablePolicy()
 
 	// rule "pi" to be used to regulate queries
 	policyName := "pi"
+
 	// defining the template of the queries to be controlled
-	spc := new(Space)
+	spc := new(gospace.Space)
 	var d float64
 	var x float64
 	var y float64
 	var i int
 	var j int
 	var who int
+
 	// the template of the queries
-	template := CreateTemplate(minD, "device", &who, "in", &x, &y, &i, &j, "distanceToPoI", &d)
+	template := gospace.CreateTemplate(minD, "device", &who, "in", &x, &y, &i, &j, "distanceToPoI", &d)
 	templateFields := template.Fields()
 	var ltf []interface{}
 	ltf = make([]interface{}, len(templateFields)+1)
-	copy(ltf[:2], []interface{}{templateFields[0], NewLabels(NewLabel(policyName))})
+	copy(ltf[:2], []interface{}{templateFields[0], gospace.NewLabels(gospace.NewLabel(policyName))})
 	copy(ltf[2:], templateFields[1:])
-	ltp := CreateTemplate(ltf...)
-	// define the action to be controlled
-	a := NewAction(spc.QueryAgg, ltp)
-	// define the transformations of template, tuple and result
-	templateTrans := NewTransformation(TemplateIdentity)
-	tupleTrans := NewTransformation(TupleIdentity)
-	resultTrans := NewTransformation(TupleIdentity)
-	transformations := NewTransformations(&templateTrans, &tupleTrans, &resultTrans)
-	// create policy rule with action and transformation
-	rule := NewAggregationRule(*a, *transformations)
-	// add the aggregation policy with name "pi"
-	policy.Add(NewAggregationPolicy(NewLabel(policyName), rule))
+	ltp := gospace.CreateTemplate(ltf...)
 
-	field := NewSpace("tcp://" + host + ":" + port + "/field")
+	// define the action to be controlled
+	a := gospace.NewAction(spc.QueryAgg, ltp)
+
+	// define the transformations of template, tuple and result
+	templateTrans := gospace.NewTransformation(TemplateIdentity)
+	tupleTrans := gospace.NewTransformation(TupleIdentity)
+	resultTrans := gospace.NewTransformation(TupleIdentity)
+	transformations := gospace.NewTransformations(&templateTrans, &tupleTrans, &resultTrans)
+
+	// create policy rule with action and transformation
+	rule := gospace.NewAggregationRule(*a, *transformations)
+
+	// add the aggregation policy with name "pi"
+	lbl := gospace.NewLabel(policyName)
+	policy.Add(gospace.NewAggregationPolicy(lbl, rule))
+
+	//field := gospace.NewSpace("tcp://" + host + ":" + port + "/field")
 	// with policies
-	// field := NewSpace("tcp://" + host + ":" + port + "/field, policy)
+	field := gospace.NewSpace("tcp://"+host+":"+port+"/field", policy)
+	lbls := gospace.NewLabels(gospace.NewLabel("pi"))
 
 	// launche all devices
 	for i := 0; i < ndevices; i++ {
-		go device(&field, i)
+		go device(&field, i, lbls)
 	}
 
 	// wait for all devices to be done
@@ -82,17 +93,17 @@ func main() {
 	fmt.Println("FINAL VALUES")
 	fmt.Println("############")
 	for i := 0; i < ndevices; i++ {
-		tl, _ := field.GetAll("device", i, "in", &x, &y, &i, &j, "distanceToPoI", &d)
+		tl, _ := field.GetAll(lbls, "device", i, "in", &x, &y, &i, &j, "distanceToPoI", &d)
 		for _, t := range tl {
-			d = t.GetFieldAt(8).(float64)
-			x = t.GetFieldAt(3).(float64)
-			y = t.GetFieldAt(4).(float64)
+			d = t.GetFieldAt(9).(float64)
+			x = t.GetFieldAt(4).(float64)
+			y = t.GetFieldAt(5).(float64)
 			fmt.Printf("%f , %f , %f \n", x, y, d)
 		}
 	}
 }
 
-func device(field *Space, me int) {
+func device(field *gospace.Space, me int, lbls gospace.Labels) {
 	var d float64
 	var d2 float64
 	var x float64
@@ -112,9 +123,9 @@ func device(field *Space, me int) {
 	d = distanceToPoI(x, y)
 
 	fmt.Printf("Device %d in (%f,%f) area (%d,%d) distance %f\n", me, x, y, i, j, d)
-	field.Put("device", me, "in", x, y, i, j, "distanceToPoI", d)
+	// field.Put("device", me, "in", x, y, i, j, "distanceToPoI", d)
 	// with policy
-	// field.Put(NewLabel("pi"), "device", me, "in", x, y, i, j, "distanceToPoI", d)
+	field.Put(lbls, "device", me, "in", x, y, i, j, "distanceToPoI", d)
 
 	// keep aggregating for some rounds
 	for rounds := 0; rounds < 10; rounds++ {
@@ -122,11 +133,11 @@ func device(field *Space, me int) {
 		// probe the area and adjacent ones + the diagonals
 		for ii := i - 1; ii <= i+1; ii++ {
 			for jj := j - 1; jj <= j+1; jj++ {
-				t, e := field.QueryAgg(minD, "device", &who, "in", &x2, &y2, ii, jj, "distanceToPoI", &d2)
-				if e == nil && reflect.TypeOf(t) == reflect.TypeOf(Tuple{}) && t.Length() == 9 {
-					d2 = t.GetFieldAt(8).(float64)
-					x2 = t.GetFieldAt(3).(float64)
-					y2 = t.GetFieldAt(4).(float64)
+				t, e := field.QueryAgg(minD, lbls, "device", &who, "in", &x2, &y2, ii, jj, "distanceToPoI", &d2)
+				if e == nil && t.Length() == 9 {
+					d2 = t.GetFieldAt(9).(float64)
+					x2 = t.GetFieldAt(4).(float64)
+					y2 = t.GetFieldAt(5).(float64)
 					d2 = d2 + distanceTo(x, y, x2, y2)
 					if d2 < d {
 						d = d2
@@ -136,14 +147,13 @@ func device(field *Space, me int) {
 		}
 		// update the distance to a PoI
 		fmt.Printf("Device %d in (%f,%f) area (%d,%d) distance %f\n", me, x, y, i, j, d)
-		field.Get("device", me, "in", x, y, i, j, "distanceToPoI", &d2)
-		field.Put("device", me, "in", x, y, i, j, "distanceToPoI", d)
+		field.Get(lbls, "device", me, "in", x, y, i, j, "distanceToPoI", &d2)
+		//field.Put("device", me, "in", x, y, i, j, "distanceToPoI", d)
 		// with policy
-		//field.Put(NewLabel("pi"), "device", me, "in", x, y, i, j, "distanceToPoI", d)
+		field.Put(lbls, "device", me, "in", x, y, i, j, "distanceToPoI", d)
 	}
 
 	field.Put("done")
-
 }
 
 // area computes the area of interest (cell) for given coordinates
@@ -153,16 +163,18 @@ func area(x float64, y float64) (int, int) {
 }
 
 // distancetoPoI computes the distance to the nearest PoO
-func distanceToPoI(x float64, y float64) float64 {
+func distanceToPoI(x float64, y float64) (d float64) {
 	// For now, the only PoI is at (0.0,0.0)
 	// A device can see it only if in the same area
 	i1, j1 := area(x, y)
 	i2, j2 := area(0, 0)
 	if i1 == i2 && j1 == j2 {
-		return math.Sqrt((x * x) + (y * y))
+		d = math.Sqrt((x * x) + (y * y))
 	} else {
-		return math.MaxFloat64
+		d = math.MaxFloat64
 	}
+
+	return d
 }
 
 // distanceTo computes the Euclidean distance between two points on the map
@@ -171,13 +183,13 @@ func distanceTo(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
 }
 
 // minD finds the tuple with the tuple with the smallest distance field
-func minD(ts ...Intertuple) container.Intertuple {
+func minD(ts ...gospace.Intertuple) gospace.Intertuple {
 
 	//fmt.Printf("Aggregating %d tuples\n", len(ts))
 
 	if len(ts) == 0 {
 		tt := make([]interface{}, 1)
-		t := CreateTuple(tt)
+		t := gospace.CreateTuple(tt)
 		return &t
 	}
 
@@ -187,8 +199,8 @@ func minD(ts ...Intertuple) container.Intertuple {
 	t := ts[0]
 
 	for z := 0; z < len(ts); z++ {
-		if ts[z].GetFieldAt(8).(float64) < d {
-			d = ts[z].GetFieldAt(8).(float64)
+		if ts[z].GetFieldAt(9).(float64) < d {
+			d = ts[z].GetFieldAt(9).(float64)
 			t = ts[z]
 		}
 	}
@@ -201,7 +213,7 @@ func args() (host string, port string, ndevices int) {
 
 	// default values
 	host = "localhost"
-	port = "31145"
+	port = "31456"
 	ndevices = 10
 
 	flag.Parse()
@@ -228,19 +240,19 @@ func args() (host string, port string, ndevices int) {
 }
 
 // TemplateIdentity is the template identity function.
-func TemplateIdentity(i interface{}) (tp container.Template) {
+func TemplateIdentity(i interface{}) (tp gospace.Template) {
 	tpf := i.([]interface{})
 
-	tp = CreateTemplate(tpf...)
+	tp = gospace.CreateTemplate(tpf...)
 
 	return tp
 }
 
 // TupleIdentity is the tuple identity function.
-func TupleIdentity(i interface{}) (it container.Intertuple) {
+func TupleIdentity(i interface{}) (it gospace.Intertuple) {
 	tf := i.([]interface{})
 
-	t := CreateTuple(tf...)
+	t := gospace.CreateTuple(tf...)
 	it = &t
 
 	return it
